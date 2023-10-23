@@ -1,0 +1,40 @@
+name: Yifei Test Terraform installation
+on:
+  push:
+    branches:
+      - main
+    paths-ignore: # https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#example-ignoring-paths
+      - 'docs/**'
+      - '.atlassian/**'
+      - 'test/unittest**'
+  pull_request_target:
+    types: [ labeled ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    if: ${{ github.event.label.name == 'e2e' || github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
+    name: Yifei Test Terraform installation
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3.1.0
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Install the latest Terraform
+        run: |
+          # check existing version
+          terraform -version
+          # download the latest
+          URL=$(curl -fsSL https://api.releases.hashicorp.com/v1/releases/terraform/latest | jq -r '.builds[] | select((.arch=="amd64") and (.os=="linux")).url')
+          curl -s -o /tmp/terraform.zip ${URL}
+          echo y | unzip /tmp/terraform.zip -d /usr/local/bin/
+          rm /tmp/terraform.zip          
+          # check the latest version
+          terraform -version
